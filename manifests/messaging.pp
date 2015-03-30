@@ -81,6 +81,7 @@ class cloud::messaging(
   }
 
   class { 'rabbitmq':
+    erlang_cookie            => 'EOKOWXQREETZSHFNTPEY',
     delete_guest_user        => true,
     config_cluster           => true,
     cluster_nodes            => $array_rabbit_names,

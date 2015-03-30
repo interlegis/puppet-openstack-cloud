@@ -617,7 +617,7 @@ class cloud::identity (
   }
 
   class { 'nova::keystone::auth':
-    cinder            => true,
+    #cinder            => true, (deprecated and has no effect)
     admin_address     => $ks_nova_admin_host,
     internal_address  => $ks_nova_internal_host,
     public_address    => $ks_nova_public_host,
