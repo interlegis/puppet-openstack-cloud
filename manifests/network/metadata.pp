@@ -13,8 +13,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-# Network Metadata node (need to be run once)
-# Could be managed by spof_node manifest
+# == Class: cloud::network::metadata
+#
+# Network Metadata node
 #
 # === Parameters:
 #

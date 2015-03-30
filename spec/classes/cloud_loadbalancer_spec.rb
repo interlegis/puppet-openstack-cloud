@@ -38,7 +38,8 @@ describe 'cloud::loadbalancer' do
         :keystone_api                      => true,
         :trove_api                         => true,
         :horizon                           => true,
-        :spice                             => true,
+        :spice                             => false,
+        :novnc                             => true,
         :ceilometer_bind_options           => [],
         :cinder_bind_options               => [],
         :ec2_bind_options                  => [],
@@ -98,9 +99,9 @@ describe 'cloud::loadbalancer' do
     end # configure keepalived server
 
     it 'configure sysctl to allow HAproxy to bind to a non-local IP address' do
-      is_expected.to contain_exec('exec_sysctl_net.ipv4.ip_nonlocal_bind').with_command(
-        'sysctl -w net.ipv4.ip_nonlocal_bind=1'
-      )
+      is_expected.to contain_sysctl__value('net.ipv4.ip_nonlocal_bind').with({
+        :value => 1,
+      })
     end
 
     it 'do not configure an internal VRRP instance by default' do
@@ -130,7 +131,6 @@ describe 'cloud::loadbalancer' do
           'auth_type'            => 'PASS',
           'auth_pass'            => 'secret',
           'notify_master'        => "#{platform_params[:start_haproxy_service]}",
-          'notify_backup'        => "#{platform_params[:stop_haproxy_service]}",
         })
       end
     end
@@ -166,7 +166,6 @@ describe 'cloud::loadbalancer' do
           'auth_type'            => 'PASS',
           'auth_pass'            => 'secret',
           'notify_master'        => "#{platform_params[:start_haproxy_service]}",
-          'notify_backup'        => "#{platform_params[:stop_haproxy_service]}",
         })
       end # configure vrrp_instance with BACKUP state
       it 'configure haproxy server without service managed' do
@@ -187,7 +186,6 @@ describe 'cloud::loadbalancer' do
           'auth_type'            => 'PASS',
           'auth_pass'            => 'secret',
           'notify_master'        => "#{platform_params[:start_haproxy_service]}",
-          'notify_backup'        => "#{platform_params[:stop_haproxy_service]}",
         })
       end
       it 'configure haproxy server with service managed' do
@@ -195,19 +193,22 @@ describe 'cloud::loadbalancer' do
       end # configure haproxy server
     end # configure keepalived in master
 
-    context 'configure logrotate file' do
-      it { is_expected.to contain_file('/etc/logrotate.d/haproxy').with(
-        :source => 'puppet:///modules/cloud/logrotate/haproxy',
-        :mode   => '0644',
-        :owner  => 'root',
-        :group  => 'root'
+    context 'configure logrotate rule' do
+      it { is_expected.to contain_logrotate__rule('haproxy').with(
+        :path          => '/var/log/haproxy.log',
+        :rotate        => 7,
+        :rotate_every  => 'day',
+        :missingok     => true,
+        :ifempty       => false,
+        :delaycompress => true,
+        :compress      => true
       )}
-    end # configure logrotate file
+    end # configure logrotate rule
 
     context 'configure monitor haproxy listen' do
       it { is_expected.to contain_haproxy__listen('monitor').with(
         :ipaddress => params[:vip_public_ip],
-        :ports     => '9300'
+        :ports     => '10300'
       )}
     end # configure monitor haproxy listen
 
@@ -217,7 +218,7 @@ describe 'cloud::loadbalancer' do
       end
       it { is_expected.to contain_haproxy__listen('monitor').with(
         :ipaddress => ['192.168.0.1'],
-        :ports     => '9300'
+        :ports     => '10300'
       )}
     end # configure monitor haproxy listen
 
@@ -258,11 +259,10 @@ describe 'cloud::loadbalancer' do
       )}
     end # configure monitor haproxy listen
 
-    # test backward compatibility
-    context 'configure OpenStack binding on public network only' do
-      it { is_expected.to contain_haproxy__listen('spice_cluster').with(
+    context 'configure OpenStack Nova with novnc' do
+      it { is_expected.to contain_haproxy__listen('novnc_cluster').with(
         :ipaddress => [params[:vip_public_ip]],
-        :ports     => '6082',
+        :ports     => '6080',
         :options   => {
           'mode'           => 'tcp',
           'balance'        => 'source',
@@ -273,16 +273,16 @@ describe 'cloud::loadbalancer' do
       )}
     end
 
-    context 'configure Openstack Nova with novnc' do
+    context 'configure OpenStack binding on public network only' do
       before do
         params.merge!(
-          :spice      => false,
-          :novnc      => true,
-          :novnc_port => 6080 )
+          :spice      => true,
+          :novnc      => false,
+          :novnc_port => 6082 )
       end
-      it { is_expected.to contain_haproxy__listen('novnc_cluster').with(
+      it { is_expected.to contain_haproxy__listen('spice_cluster').with(
         :ipaddress => [params[:vip_public_ip]],
-        :ports     => '6080',
+        :ports     => '6082',
         :options   => {
           'mode'           => 'tcp',
           'balance'        => 'source',
@@ -539,7 +539,7 @@ describe 'cloud::loadbalancer' do
           :action => 'accept',
         )
         is_expected.to contain_firewall('100 allow haproxy monitor access').with(
-          :port   => '9300',
+          :port   => '10300',
           :proto  => 'tcp',
           :action => 'accept',
         )
@@ -574,7 +574,7 @@ describe 'cloud::loadbalancer' do
           :limit  => '50/sec',
         )
         is_expected.to contain_firewall('100 allow haproxy monitor access').with(
-          :port   => '9300',
+          :port   => '10300',
           :proto  => 'tcp',
           :action => 'accept',
           :limit  => '50/sec',
@@ -617,7 +617,6 @@ describe 'cloud::loadbalancer' do
     let :platform_params do
       { :auth_url                   => 'dashboard',
         :start_haproxy_service      => '"/usr/bin/systemctl start haproxy"',
-        :stop_haproxy_service       => '"/usr/bin/systemctl stop haproxy"',
         :keepalived_name_is_process => 'false',
         :keepalived_vrrp_script     => 'systemctl status haproxy.service',
       }

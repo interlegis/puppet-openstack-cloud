@@ -94,6 +94,34 @@ describe 'cloud::database::sql::mysql' do
 
     end # configure mysqlchk http replication
 
+    context 'configure override of systemd defaults' do
+      before :each do
+        facts.merge!( :hostname => 'os-ci-test1',
+                      :osfamily => 'RedHat',
+                      :operatingsystemrelease => 7 )
+      end
+      before :each do
+        params.merge!(:mysql_systemd_override_settings => { 'LimitNOFILE' => 666 })
+      end
+
+      it { is_expected.to contain_file('/etc/systemd/system/mysql-bootstrap.service.d/custom.conf').with_content(/[Service]/) }
+      it { is_expected.to contain_file('/etc/systemd/system/mysql-bootstrap.service.d/custom.conf').with_content(/LimitNOFILE=666/) }
+      it { is_expected.to contain_file('/etc/my.cnf').with_content(/open_files_limit                = 666/) }
+    end
+
+    context 'configure open_file_limits' do
+      before :each do
+        facts.merge!( :hostname => 'os-ci-test1',
+                      :osfamily => 'RedHat',
+                      :operatingsystemrelease => 7 )
+      end
+      before :each do
+        params.merge!(:open_files_limit => 666)
+      end
+
+      it { is_expected.to contain_file('/etc/my.cnf').with_content(/open_files_limit                = 666/) }
+    end
+
     context 'configure databases on the galera master server' do
 
       before :each do
@@ -111,7 +139,6 @@ describe 'cloud::database::sql::mysql' do
 
       it 'configure keystone database' do
         is_expected.to contain_class('keystone::db::mysql').with(
-            :mysql_module  => '2.2',
             :dbname        => 'keystone',
             :user          => 'keystone',
             :password      => 'secrete',
@@ -121,7 +148,6 @@ describe 'cloud::database::sql::mysql' do
 
       it 'configure glance database' do
         is_expected.to contain_class('glance::db::mysql').with(
-            :mysql_module  => '2.2',
             :dbname        => 'glance',
             :user          => 'glance',
             :password      => 'secrete',
@@ -131,7 +157,6 @@ describe 'cloud::database::sql::mysql' do
 
       it 'configure nova database' do
         is_expected.to contain_class('nova::db::mysql').with(
-            :mysql_module  => '2.2',
             :dbname        => 'nova',
             :user          => 'nova',
             :password      => 'secrete',
@@ -141,7 +166,6 @@ describe 'cloud::database::sql::mysql' do
 
       it 'configure cinder database' do
         is_expected.to contain_class('cinder::db::mysql').with(
-            :mysql_module  => '2.2',
             :dbname        => 'cinder',
             :user          => 'cinder',
             :password      => 'secrete',
@@ -151,7 +175,6 @@ describe 'cloud::database::sql::mysql' do
 
       it 'configure neutron database' do
         is_expected.to contain_class('neutron::db::mysql').with(
-            :mysql_module  => '2.2',
             :dbname        => 'neutron',
             :user          => 'neutron',
             :password      => 'secrete',
@@ -161,7 +184,6 @@ describe 'cloud::database::sql::mysql' do
 
       it 'configure heat database' do
         is_expected.to contain_class('heat::db::mysql').with(
-            :mysql_module  => '2.2',
             :dbname        => 'heat',
             :user          => 'heat',
             :password      => 'secrete',
@@ -171,7 +193,6 @@ describe 'cloud::database::sql::mysql' do
 
       it 'configure trove database' do
         is_expected.to contain_class('trove::db::mysql').with(
-            :mysql_module  => '2.2',
             :dbname        => 'trove',
             :user          => 'trove',
             :password      => 'secrete',
@@ -201,7 +222,7 @@ describe 'cloud::database::sql::mysql' do
       it 'configure mysql database' do
         is_expected.to contain_exec('bootstrap-mysql').with(
           :command => '/usr/bin/mysql_install_db --rpm --user=mysql',
-          :unless  => "test -d /var/lib/mysql/mysql",
+          :unless  => "/usr/bin/test -d /var/lib/mysql/mysql",
           :before  => 'Service[mysqld]'
         )
       end
@@ -218,7 +239,7 @@ describe 'cloud::database::sql::mysql' do
           :action => 'accept',
         )
         is_expected.to contain_firewall('100 allow mysqlchk access').with(
-          :port   => '9200',
+          :port   => '8200',
           :proto  => 'tcp',
           :action => 'accept',
         )
@@ -245,7 +266,7 @@ describe 'cloud::database::sql::mysql' do
           :limit  => '50/sec',
         )
         is_expected.to contain_firewall('100 allow mysqlchk access').with(
-          :port   => '9200',
+          :port   => '8200',
           :proto  => 'tcp',
           :action => 'accept',
           :limit  => '50/sec',
@@ -278,7 +299,8 @@ describe 'cloud::database::sql::mysql' do
 
   context 'on RedHat platforms' do
     let :facts do
-      { :osfamily => 'RedHat' }
+      { :osfamily => 'RedHat',
+        :operatingsystemrelease => 7 }
     end
 
     let :platform_params do

@@ -41,7 +41,7 @@
 #   Defaults to '127.0.0.1'
 #
 # [*servername*]
-#   (optional) DNS name used to connect to Openstack Dashboard.
+#   (optional) DNS name used to connect to OpenStack Dashboard.
 #   Default value fqdn.
 #
 # [*listen_ssl*]
@@ -51,19 +51,19 @@
 #
 # [*keystone_proto*]
 #   (optional) Protocol (http or https) of keystone endpoint.
-#   Defaults to 'http'
+#   Defaults to 'http'
 #
 # [*keystone_host*]
 #   (optional) IP / Host of keystone endpoint.
-#   Defaults '127.0.0.1'
+#   Defaults '127.0.0.1'
 #
 # [*keystone_port*]
 #   (optional) TCP port of keystone endpoint.
-#   Defaults to '5000'
+#   Defaults to '5000'
 #
 # [*debug*]
 #   (optional) Enable debug or not.
-#   Defaults to true
+#   Defaults to true
 #
 # [*horizon_cert*]
 #   (required with listen_ssl) Certificate to use for SSL support.
@@ -147,16 +147,10 @@ class cloud::dashboard(
   }
   $neutron_options_real = merge ($neutron_options, $neutron_extra_options)
 
-  ensure_resource('class', 'apache', {
-    default_vhost => false
-  })
-
   class { 'horizon':
     secret_key              => $secret_key,
-    can_set_mount_point     => 'False',
     servername              => $servername,
     bind_address            => $api_eth,
-    swift                   => true,
     keystone_url            => $keystone_url,
     cache_server_ip         => false,
     django_debug            => $debug,

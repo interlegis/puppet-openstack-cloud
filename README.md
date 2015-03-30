@@ -34,21 +34,29 @@ The [puppet-openstack-cloud](https://wiki.openstack.org/wiki/Puppet-openstack/pu
 Cinder, Glance and Nova can use Ceph as backend storage, using [puppet-ceph](https://github.com/enovance/puppet-ceph).
 
 Only KVM and QEMU are supported as hypervisors, for now.
+
 Neutron use ML2 plugin with GRE and Open-vSwitch drivers.
+
 Cinder has multi-backend support:
+
 * RBD (default)
 * NetAPP
 * iSCSI
 * EMC VNX direct
 * NFS
+
 Glance supports different backends:
+
 * RBD (default)
 * file
 * NFS (mount a NFS share by using file backend)
 * Swift
+
 Neutron supports:
+
 * ML2 plugin with OVS agent (GRE + VXLAN supported)
 * Cisco plugin with N1KV agent (non-ML2)
+
 Trove support is now experimental.
 
 [Puppet Modules](http://docs.puppetlabs.com/learning/modules1.html#modules) are a collection of related contents that can be used to model the configuration of a discrete service.
@@ -123,7 +131,7 @@ Utilization of this module can come in many forms.  It was designed to be capabl
 
 Need a feature? Found a bug? Let us know!
 
-We are extremely interested in growing a community of OpenStack experts and users around these modules so they can serve as an example of consolidated best practices of how to deploy openstack.
+We are extremely interested in growing a community of OpenStack experts and users around these modules so they can serve as an example of consolidated best practices of how to deploy OpenStack.
 
 The best way to get help with this set of modules is to email the group associated with this project:
 
@@ -131,13 +139,13 @@ The best way to get help with this set of modules is to email the group associat
 
 Issues should be opened here:
 
-  https://github.com/enovance/puppet-openstack-cloud/issues
+  https://bugs.launchpad.net/puppet-openstack-cloud/+filebug
 
 
 ## Contributors
 
-* https://github.com/enovance/puppet-openstack-cloud/graphs/contributors
+* http://stackalytics.com/?project_type=stackforge&module=puppet-openstack-cloud&release=all&metric=commits
 
 ## Release Notes
 
-See [CHANGELOG](https://github.com/enovance/puppet-openstack-cloud/blob/master/CHANGELOG.md) file.
+See [CHANGELOG](https://github.com/stackforge/puppet-openstack-cloud/blob/master/CHANGELOG.md) file.

@@ -19,27 +19,27 @@
 #
 # === Parameters:
 #
-#  [*rhn_registration*]
-#   (optional) The RedHat network authentication token
-#   Defaults to undef
+# [*rhn_registration*]
+#  (optional) The RedHat network authentication token
+#  Defaults to undef
 #
-#  [*root_password*]
-#   (optional) Unix root password
-#   Defaults to 'root'
+# [*root_password*]
+#  (optional) Unix root password
+#  Defaults to 'root'
 #
-#  [*dns_ips*]
-#   (optional) Hostname or IP of the Domain Name Server (dns) used
-#   Should by an array.
-#   Defaults to google public dns ['8.8.8.8', '8.8.4.4']
+# [*dns_ips*]
+#  (optional) Hostname or IP of the Domain Name Server (dns) used
+#  Should by an array.
+#  Defaults to google public dns ['8.8.8.8', '8.8.4.4']
 #
-#  [*site_domain*]
-#   (optional) Domain name (used for search and domain fields
-#   of resolv.conf configuration file
-#   Defaults to 'mydomain'
+# [*site_domain*]
+#  (optional) Domain name (used for search and domain fields
+#  of resolv.conf configuration file
+#  Defaults to 'mydomain'
 #
-#  [*motd_title*]
-#   (optional) A string used in the top of the server's motd
-#   Defaults to 'eNovance IT Operations'
+# [*motd_title*]
+#  (optional) A string used in the top of the server's motd
+#  Defaults to 'eNovance IT Operations'
 #
 # [*selinux_mode*]
 #   (optional) SELinux mode the system should be in
@@ -61,6 +61,32 @@
 #   Defaults []
 #   Example: ['module1', 'module2']
 #   Note: Those module should be in the $directory path
+#
+# [*limits*]
+#   (optional) Set of limits to set in /etc/security/limits.d/
+#   Defaults {}
+#   Example:
+#     {
+#       'mysql_nofile' => {
+#          'ensure'     => 'present',
+#          'user'       => 'mysql',
+#          'limit_type' => 'nofile',
+#          'both'       => '16384',
+#       },
+#     }
+#
+# [*sysctl*]
+#   (optional) Set of sysctl values to set.
+#   Defaults {}
+#   Example:
+#     {
+#       'net.ipv4.ip_forward' => {
+#          'value' => '1',
+#       },
+#       'net.ipv6.conf.all.forwarding => {
+#          'value' => '1',
+#       },
+#     }
 #
 # [*manage_firewall*]
 #  (optional) Completely enable or disable firewall settings
@@ -96,6 +122,8 @@ class cloud(
   $selinux_directory    = '/usr/share/selinux',
   $selinux_booleans     = [],
   $selinux_modules      = [],
+  $limits               = {},
+  $sysctl               = {},
   $manage_firewall      = false,
   $firewall_rules       = {},
   $purge_firewall_rules = false,
@@ -136,8 +164,20 @@ This node is under the control of Puppet ${::puppetversion}.
     domain      => $site_domain
   }
 
+  # Sudo
+  include ::sudo
+  include ::sudo::configs
+
   # NTP
   include ::ntp
+
+  # Security Limits
+  include ::limits
+  create_resources('limits::limits', $limits)
+
+  # sysctl values
+  include ::sysctl::base
+  create_resources('sysctl::value', $sysctl)
 
   # SELinux
   if $::osfamily == 'RedHat' {

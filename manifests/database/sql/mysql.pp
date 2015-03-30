@@ -169,53 +169,72 @@
 #   (optional) The name or ip address of host running monitoring database (clustercheck)
 #   Defaults to '127.0.0.1'
 #
+# [*open_files_limit*]
+#   (optional) An integer that specifies the open_files_limit for MySQL
+#   Defaults to 65535
+#
+# [*mysql_systemd_override_settings*]
+#   (optional) An hash of setting to override for MariaDB unit file.
+#   Defaults to {}
+#   Example : { 'LimitNOFILE' => 'infinity', 'LimitNPROC' => 4, 'TimeoutSec' => '30' }
+#
 # [*firewall_settings*]
 #   (optional) Allow to add custom parameters to firewall rules
 #   Should be an hash.
 #   Default to {}
 #
 class cloud::database::sql::mysql (
-    $api_eth                        = '127.0.0.1',
-    $galera_master_name             = 'mgmt001',
-    $galera_internal_ips            = ['127.0.0.1'],
-    $galera_gcache                  = '1G',
-    $keystone_db_host               = '127.0.0.1',
-    $keystone_db_user               = 'keystone',
-    $keystone_db_password           = 'keystonepassword',
-    $keystone_db_allowed_hosts      = ['127.0.0.1'],
-    $cinder_db_host                 = '127.0.0.1',
-    $cinder_db_user                 = 'cinder',
-    $cinder_db_password             = 'cinderpassword',
-    $cinder_db_allowed_hosts        = ['127.0.0.1'],
-    $glance_db_host                 = '127.0.0.1',
-    $glance_db_user                 = 'glance',
-    $glance_db_password             = 'glancepassword',
-    $glance_db_allowed_hosts        = ['127.0.0.1'],
-    $heat_db_host                   = '127.0.0.1',
-    $heat_db_user                   = 'heat',
-    $heat_db_password               = 'heatpassword',
-    $heat_db_allowed_hosts          = ['127.0.0.1'],
-    $nova_db_host                   = '127.0.0.1',
-    $nova_db_user                   = 'nova',
-    $nova_db_password               = 'novapassword',
-    $nova_db_allowed_hosts          = ['127.0.0.1'],
-    $neutron_db_host                = '127.0.0.1',
-    $neutron_db_user                = 'neutron',
-    $neutron_db_password            = 'neutronpassword',
-    $neutron_db_allowed_hosts       = ['127.0.0.1'],
-    $trove_db_host                  = '127.0.0.1',
-    $trove_db_user                  = 'trove',
-    $trove_db_password              = 'trovepassword',
-    $trove_db_allowed_hosts         = ['127.0.0.1'],
-    $mysql_root_password            = 'rootpassword',
-    $mysql_sys_maint_password       = 'sys_maint',
-    $galera_clustercheck_dbuser     = 'clustercheckdbuser',
-    $galera_clustercheck_dbpassword = 'clustercheckpassword',
-    $galera_clustercheck_ipaddress  = '127.0.0.1',
-    $firewall_settings              = {},
+    $api_eth                         = '127.0.0.1',
+    $galera_master_name              = 'mgmt001',
+    $galera_internal_ips             = ['127.0.0.1'],
+    $galera_gcache                   = '1G',
+    $keystone_db_host                = '127.0.0.1',
+    $keystone_db_user                = 'keystone',
+    $keystone_db_password            = 'keystonepassword',
+    $keystone_db_allowed_hosts       = ['127.0.0.1'],
+    $cinder_db_host                  = '127.0.0.1',
+    $cinder_db_user                  = 'cinder',
+    $cinder_db_password              = 'cinderpassword',
+    $cinder_db_allowed_hosts         = ['127.0.0.1'],
+    $glance_db_host                  = '127.0.0.1',
+    $glance_db_user                  = 'glance',
+    $glance_db_password              = 'glancepassword',
+    $glance_db_allowed_hosts         = ['127.0.0.1'],
+    $heat_db_host                    = '127.0.0.1',
+    $heat_db_user                    = 'heat',
+    $heat_db_password                = 'heatpassword',
+    $heat_db_allowed_hosts           = ['127.0.0.1'],
+    $nova_db_host                    = '127.0.0.1',
+    $nova_db_user                    = 'nova',
+    $nova_db_password                = 'novapassword',
+    $nova_db_allowed_hosts           = ['127.0.0.1'],
+    $neutron_db_host                 = '127.0.0.1',
+    $neutron_db_user                 = 'neutron',
+    $neutron_db_password             = 'neutronpassword',
+    $neutron_db_allowed_hosts        = ['127.0.0.1'],
+    $trove_db_host                   = '127.0.0.1',
+    $trove_db_user                   = 'trove',
+    $trove_db_password               = 'trovepassword',
+    $trove_db_allowed_hosts          = ['127.0.0.1'],
+    $mysql_root_password             = 'rootpassword',
+    $mysql_sys_maint_password        = 'sys_maint',
+    $galera_clustercheck_dbuser      = 'clustercheckdbuser',
+    $galera_clustercheck_dbpassword  = 'clustercheckpassword',
+    $galera_clustercheck_ipaddress   = '127.0.0.1',
+    $open_files_limit                = 65535,
+    $mysql_systemd_override_settings = {},
+    $firewall_settings               = {},
 ) {
 
   include 'xinetd'
+
+  if $mysql_systemd_override_settings['LimitNOFILE'] {
+    $open_files_limit_real = $mysql_systemd_override_settings['LimitNOFILE']
+    $mysql_systemd_override_settings_real = $mysql_systemd_override_settings
+  } else {
+    $open_files_limit_real = $open_files_limit
+    $mysql_systemd_override_settings_real = merge($mysql_systemd_override_settings, { 'LimitNOFILE' => $open_files_limit})
+  }
 
   $gcomm_definition = inline_template('<%= @galera_internal_ips.join(",") + "?pc.wait_prim=no" -%>')
 
@@ -226,7 +245,6 @@ class cloud::database::sql::mysql (
 
     # OpenStack DB
     class { 'keystone::db::mysql':
-      mysql_module  => '2.2',
       dbname        => 'keystone',
       user          => $keystone_db_user,
       password      => $keystone_db_password,
@@ -234,7 +252,6 @@ class cloud::database::sql::mysql (
       allowed_hosts => $keystone_db_allowed_hosts,
     }
     class { 'glance::db::mysql':
-      mysql_module  => '2.2',
       dbname        => 'glance',
       user          => $glance_db_user,
       password      => $glance_db_password,
@@ -242,7 +259,6 @@ class cloud::database::sql::mysql (
       allowed_hosts => $glance_db_allowed_hosts,
     }
     class { 'nova::db::mysql':
-      mysql_module  => '2.2',
       dbname        => 'nova',
       user          => $nova_db_user,
       password      => $nova_db_password,
@@ -250,7 +266,6 @@ class cloud::database::sql::mysql (
       allowed_hosts => $nova_db_allowed_hosts,
     }
     class { 'cinder::db::mysql':
-      mysql_module  => '2.2',
       dbname        => 'cinder',
       user          => $cinder_db_user,
       password      => $cinder_db_password,
@@ -258,7 +273,6 @@ class cloud::database::sql::mysql (
       allowed_hosts => $cinder_db_allowed_hosts,
     }
     class { 'neutron::db::mysql':
-      mysql_module  => '2.2',
       dbname        => 'neutron',
       user          => $neutron_db_user,
       password      => $neutron_db_password,
@@ -266,7 +280,6 @@ class cloud::database::sql::mysql (
       allowed_hosts => $neutron_db_allowed_hosts,
     }
     class { 'heat::db::mysql':
-      mysql_module  => '2.2',
       dbname        => 'heat',
       user          => $heat_db_user,
       password      => $heat_db_password,
@@ -274,7 +287,6 @@ class cloud::database::sql::mysql (
       allowed_hosts => $heat_db_allowed_hosts,
     }
     class { 'trove::db::mysql':
-      mysql_module  => '2.2',
       dbname        => 'trove',
       user          => $trove_db_user,
       password      => $trove_db_password,
@@ -346,9 +358,27 @@ class cloud::database::sql::mysql (
       # but MariaDB is not packaged for Red Hat / CentOS 7 in MariaDB repository.
       exec { 'bootstrap-mysql':
         command => '/usr/bin/mysql_install_db --rpm --user=mysql',
-        unless  => 'test -d /var/lib/mysql/mysql',
+        unless  => '/usr/bin/test -d /var/lib/mysql/mysql',
         before  => Service['mysqld'],
         require => [Package[$mysql_server_package_name], File[$mysql_server_config_file]]
+      }
+
+      if $::operatingsystemrelease >= 7 {
+        file { "/etc/systemd/system/${mysql_service_name}.service.d" :
+          ensure => directory,
+        }
+        file { "/etc/systemd/system/${mysql_service_name}.service.d/custom.conf" :
+          content => template('cloud/database/systemd-custom.conf.erb'),
+          owner   => 'root',
+          mode    => '0755',
+          group   => 'root',
+          notify  => [Service['mysqld'], Exec['mariadb-sysctl-daemon-reload']],
+        }
+        exec { 'mariadb-sysctl-daemon-reload' :
+          command     => '/usr/bin/systemctl daemon-reload',
+          refreshonly => true,
+          notify      => Service['mysqld'],
+        }
       }
 
     } # RedHat
@@ -403,7 +433,7 @@ class cloud::database::sql::mysql (
     before  => Package[$mysql_server_package_name],
   }
 
-  if($::osfamily == 'Debian'){
+  if $::osfamily == 'Debian' {
     # The startup time can be longer than the default 30s so we take
     # care of it there.  Until this bug is not resolved
     # https://mariadb.atlassian.net/browse/MDEV-5540, we have to do it
@@ -450,7 +480,7 @@ class cloud::database::sql::mysql (
     changes => [
       'ins service-name after service-name[last()]',
       'set service-name[last()] "mysqlchk"',
-      'set service-name[. = "mysqlchk"]/port 9200',
+      'set service-name[. = "mysqlchk"]/port 8200',
       'set service-name[. = "mysqlchk"]/protocol tcp',
     ],
     onlyif  => 'match service-name[. = "mysqlchk"] size == 0',
@@ -498,7 +528,7 @@ class cloud::database::sql::mysql (
       extras => $firewall_settings,
     }
     cloud::firewall::rule{ '100 allow mysqlchk access':
-      port   => '9200',
+      port   => '8200',
       extras => $firewall_settings,
     }
     cloud::firewall::rule{ '100 allow mysql rsync access':
@@ -513,7 +543,7 @@ class cloud::database::sql::mysql (
     ipaddresses       => $api_eth,
     ports             => '3306',
     options           =>
-      inline_template('check inter 2000 rise 2 fall 5 port 9200 <% if @hostname != @galera_master_name -%>backup<% end %>')
+      inline_template('check inter 2000 rise 2 fall 5 port 8200 <% if @hostname != @galera_master_name -%>backup<% end %>')
   }
 
   @@haproxy::balancermember{"${::fqdn}-readonly":
@@ -522,6 +552,6 @@ class cloud::database::sql::mysql (
     ipaddresses       => $api_eth,
     ports             => '3306',
     options           =>
-      inline_template('check inter 2000 rise 2 fall 5 port 9200 <% if @hostname == @galera_master_name -%>backup<% end %>')
+      inline_template('check inter 2000 rise 2 fall 5 port 8200 <% if @hostname == @galera_master_name -%>backup<% end %>')
   }
 }

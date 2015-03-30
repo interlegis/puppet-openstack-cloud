@@ -100,15 +100,9 @@ class cloud::object::controller(
     proxy_local_net_ip => $api_eth,
     port               => $ks_swift_internal_port,
     pipeline           => [
-      #'catch_errors', 'healthcheck', 'cache', 'bulk', 'ratelimit',
-      'catch_errors', 'healthcheck', 'cache', 'ratelimit',
-      #'swift3', 's3token', 'container_quotas', 'account_quotas', 'tempurl',
-      'swift3', 's3token', 'tempurl',
-      'formpost', 'staticweb',
-      # TODO: (spredzy) re enable ceilometer middleware after the current bug as been fixed
-      # https://review.openstack.org/#/c/97702
-      # 'ceilometer',
-      'authtoken', 'keystone',
+      'catch_errors', 'healthcheck', 'cache', 'bulk', 'ratelimit',
+      'swift3', 's3token', 'container_quotas', 'account_quotas', 'tempurl',
+      'formpost', 'authtoken', 'keystone', 'staticweb',
       'proxy-logging', 'proxy-server'],
     account_autocreate => true,
     log_level          => 'DEBUG',
@@ -124,23 +118,22 @@ log_statsd_default_sample_rate = 1
     memcache_servers => inline_template(
       '<%= scope.lookupvar("memcache_servers").join(",") %>'),
   }
-  class { 'swift::proxy::proxy-logging': }
-  class { 'swift::proxy::healthcheck': }
+  class { 'swift::proxy::account_quotas': }
+  class { 'swift::proxy::bulk': }
   class { 'swift::proxy::catch_errors': }
+  class { 'swift::proxy::container_quotas': }
+  class { 'swift::proxy::formpost': }
+  class { 'swift::proxy::healthcheck': }
+  class { 'swift::proxy::proxy_logging': }
   class { 'swift::proxy::ratelimit': }
-  #class { 'swift::proxy::account_quotas': }
-  #class { 'swift::proxy::container_quotas': }
-  #class { 'swift::proxy::bulk': }
+  class { 'swift::proxy::slo': }
   class { 'swift::proxy::staticweb': }
-  # TODO: (spredzy) re enable ceilometer middleware after the current bug as been fixed
-  # https://review.openstack.org/#/c/97702
-  #class { 'swift::proxy::ceilometer': }
+  class { 'swift::proxy::tempurl': }
+
   class { 'swift::proxy::keystone':
     operator_roles => ['admin', 'SwiftOperator', 'ResellerAdmin'],
   }
 
-  class { 'swift::proxy::tempurl': }
-  class { 'swift::proxy::formpost': }
   class { 'swift::proxy::authtoken':
     admin_password      => $ks_swift_password,
     auth_host           => $ks_keystone_admin_host,
@@ -163,15 +156,6 @@ cache = swift.cache')
     swift_dir     => '/etc/swift',
     auth_pass     => $ks_swift_dispersion_password,
     endpoint_type => 'internalURL'
-  }
-
-  # Note(sileht): log file should exists to swift proxy to write to
-  # the ceilometer directory
-  file{'/var/log/ceilometer/swift-proxy-server.log':
-    ensure => present,
-    owner  => 'swift',
-    group  => 'swift',
-    notify => Service['swift-proxy']
   }
 
   Swift::Ringsync<<| |>> #~> Service["swift-proxy"]

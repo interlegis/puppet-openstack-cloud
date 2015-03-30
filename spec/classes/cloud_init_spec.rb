@@ -38,7 +38,53 @@ describe 'cloud' do
       }
     end
 
+    it {is_expected.to contain_class('sudo')}
+    it {is_expected.to contain_class('sudo::configs')}
     it {is_expected.to contain_class('ntp')}
+    it {is_expected.to contain_class('limits')}
+
+    context 'with explicit limits enabled' do
+      before :each do
+        params.merge!( :limits => {
+                         'username_nofile' => {
+                           'ensure'     => 'present',
+                           'user'       => 'username',
+                           'limit_type' => 'nofile',
+                           'hard'       => '16384'
+                         }
+                      })
+      end
+
+      it { is_expected.to contain_limits__limits('username_nofile').with(
+        :ensure     => 'present',
+        :user       => 'username',
+        :limit_type => 'nofile',
+        :hard       => '16384',
+     ) }
+
+    end
+
+    context 'with explicit sysctl values' do
+      before :each do
+        params.merge!( :sysctl => {
+                         'net.ipv4.ip_forward' => {
+                           'value' => '1',
+                          },
+                         'net.ipv6.conf.all.forwarding' => {
+                           'value' => '1',
+                         }
+                      })
+      end
+
+      it { is_expected.to contain_sysctl('net.ipv4.ip_forward').with(
+        :val => '1',
+     ) }
+      it { is_expected.to contain_sysctl('net.ipv6.conf.all.forwarding').with(
+        :val => '1',
+     ) }
+
+    end
+
 
     it {is_expected.to contain_file('/etc/motd').with(
       {:ensure => 'file'}.merge(file_defaults)

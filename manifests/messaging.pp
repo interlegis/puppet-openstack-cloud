@@ -45,12 +45,18 @@
 #   (optional) Port of RabbitMQ service.
 #   Defaults to '5672'
 #
+# [*erlang_cookie*]
+#   (required) Erlang cookie to use.
+#   When running a cluster, this value should be the same for all
+#   the nodes.
+#
 # [*firewall_settings*]
 #   (optional) Allow to add custom parameters to firewall rules
 #   Should be an hash.
 #   Default to {}
 #
 class cloud::messaging(
+  $erlang_cookie,
   $cluster_node_type = 'disc',
   $rabbit_names      = $::hostname,
   $rabbit_password   = 'rabbitpassword',
@@ -69,6 +75,7 @@ class cloud::messaging(
 
   # Packaging issue: https://bugzilla.redhat.com/show_bug.cgi?id=1033305
   if $::osfamily == 'RedHat' {
+    $package_provider = 'yum'
     file {'/usr/sbin/rabbitmq-plugins':
       ensure => link,
       target => '/usr/lib/rabbitmq/bin/rabbitmq-plugins'
@@ -78,6 +85,9 @@ class cloud::messaging(
       ensure => link,
       target => '/usr/lib/rabbitmq/bin/rabbitmq-env'
     }
+  }
+  else {
+    $package_provider  = $rabbitmq::params::package_provider
   }
 
   class { 'rabbitmq':
@@ -89,13 +99,15 @@ class cloud::messaging(
     cluster_node_type        => $cluster_node_type,
     node_ip_address          => $rabbitmq_ip,
     port                     => $rabbitmq_port,
+    erlang_cookie            => $erlang_cookie,
+    package_provider         => $package_provider,
   }
 
-  rabbitmq_vhost { '/':
+  rabbitmq_vhost { ['/', '/sensu']:
     provider => 'rabbitmqctl',
     require  => Class['rabbitmq'],
   }
-  rabbitmq_user { ['nova','glance','neutron','cinder','ceilometer','heat','trove']:
+  rabbitmq_user { ['nova','glance','neutron','cinder','ceilometer','heat','trove', 'sensu']:
     admin    => true,
     password => $rabbit_password,
     provider => 'rabbitmqctl',
@@ -109,6 +121,7 @@ class cloud::messaging(
     'ceilometer@/',
     'heat@/',
     'trove@/',
+    'sensu@/sensu',
   ]:
     configure_permission => '.*',
     write_permission     => '.*',

@@ -38,14 +38,16 @@ describe 'cloud::dashboard' do
         :allowed_hosts              => 'horizon.openstack.org'}
     end
 
+    let :pre_condition do
+        "class { 'apache': default_vhost => false }"
+    end
+
     it 'configure horizon' do
       is_expected.to contain_class('horizon').with(
           :listen_ssl              => false,
           :secret_key              => '/etc/ssl/secret',
-          :can_set_mount_point     => 'False',
           :bind_address            => '10.0.0.1',
           :servername              => 'horizon.openstack.org',
-          :swift                   => true,
           :cache_server_ip         => false,
           :keystone_url            => 'http://keystone.openstack.org:5000/v2.0',
           :django_debug            => true,
@@ -106,10 +108,8 @@ describe 'cloud::dashboard' do
         is_expected.to contain_class('horizon').with(
           :listen_ssl              => false,
           :secret_key              => '/etc/ssl/secret',
-          :can_set_mount_point     => 'False',
           :bind_address            => '10.0.0.1',
           :servername              => 'horizon.openstack.org',
-          :swift                   => true,
           :cache_server_ip         => false,
           :keystone_url            => 'http://keystone.openstack.org:5000/v2.0',
           :django_debug            => true,
@@ -126,7 +126,8 @@ describe 'cloud::dashboard' do
 
     context 'with default firewall enabled' do
       let :pre_condition do
-        "class { 'cloud': manage_firewall => true }"
+        "class { 'apache': default_vhost => false }
+         class { 'cloud': manage_firewall => true }"
       end
       it 'configure horizon firewall rules' do
         is_expected.to contain_firewall('100 allow horizon access').with(
@@ -139,7 +140,8 @@ describe 'cloud::dashboard' do
 
     context 'with custom firewall enabled' do
       let :pre_condition do
-        "class { 'cloud': manage_firewall => true }"
+        "class { 'apache': default_vhost => false }
+         class { 'cloud': manage_firewall => true }"
       end
       before :each do
         params.merge!(:firewall_settings => { 'limit' => '50/sec' } )

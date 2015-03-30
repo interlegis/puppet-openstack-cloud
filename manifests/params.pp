@@ -42,18 +42,17 @@ class cloud::params {
     'RedHat': {
       # Specific to Red Hat
       $start_haproxy_service      = '"/usr/bin/systemctl start haproxy"'
-      $stop_haproxy_service       = '"/usr/bin/systemctl stop haproxy"'
       $horizon_auth_url           = 'dashboard'
       $libvirt_service_name       = 'libvirtd'
       $keepalived_name_is_process = false
       $keepalived_vrrp_script     = 'systemctl status haproxy.service'
       $puppetmaster_package_name  = 'puppet-server'
       $redis_service_name         = 'redis'
+      $service_provider           = 'systemd'
     } # RedHat
     'Debian': {
       # Specific to Debian / Ubuntu
       $start_haproxy_service      = '"/etc/init.d/haproxy start"'
-      $stop_haproxy_service       = '"/etc/init.d/haproxy stop"'
       $horizon_auth_url           = 'horizon'
       $keepalived_name_is_process = true
       $keepalived_vrrp_script     = undef
@@ -62,9 +61,11 @@ class cloud::params {
       case $::operatingsystem {
         'Ubuntu': {
           $libvirt_service_name = 'libvirt-bin'
+          $service_provider     = 'upstart'
         }
         default: {
           $libvirt_service_name = 'libvirtd'
+          $service_provider     = 'lsb'
         }
       }
     } # Debian

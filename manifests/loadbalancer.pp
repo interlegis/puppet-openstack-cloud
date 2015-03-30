@@ -155,14 +155,35 @@
 #   If true, both public and internal will attempt to be created except if vip_internal_ip is set to false.
 #   If set to ['10.0.0.1'], only IP in the array (or in the string) will be configured in the pool. They must be part of keepalived_ip options.
 #   If set to false, no binding will be configure.
-#   Defaults to true
+#   Defaults to false
 #
 # [*novnc*]
 #   (optional) Enable or not novnc binding.
 #   If true, both public and internal will attempt to be created except if vip_internal_ip is set to false.
 #   If set to ['10.0.0.1'], only IP in the array (or in the string) will be configured in the pool. They must be part of keepalived_ip options.
 #   If set to false, no binding will be configure.
-#   Defaults to false
+#   Defaults to true
+#
+# [*elasticsearch*]
+#   (optional) Enable or not ElasticSearch binding.
+#   If true, both public and internal will attempt to be created except if vip_internal_ip is set to false.
+#   If set to ['10.0.0.1'], only IP in the array (or in the string) will be configured in the pool. They must be part of keepalived_ip options.
+#   If set to false, no binding will be configure.
+#   Defaults to true
+#
+# [*kibana*]
+#   (optional) Enable or not kibana binding.
+#   If true, both public and internal will attempt to be created except if vip_internal_ip is set to false.
+#   If set to ['10.0.0.1'], only IP in the array (or in the string) will be configured in the pool. They must be part of keepalived_ip options.
+#   If set to false, no binding will be configure.
+#   Defaults to true
+#
+# [*redis*]
+#   (optional) Enable or not redis binding.
+#   If true, both public and internal will attempt to be created except if vip_internal_ip is set to false.
+#   If set to ['10.0.0.1'], only IP in the array (or in the string) will be configured in the pool. They must be part of keepalived_ip options.
+#   If set to false, no binding will be configure.
+#   Defaults to true
 #
 # [*metadata_api*]
 #   (optional) Enable or not Metadata public binding.
@@ -184,6 +205,20 @@
 #   If set to ['10.0.0.1'], only IP in the array (or in the string) will be configured in the pool. They must be part of keepalived_ip options.
 #   If set to false, no binding will be configure.
 #   Defaults to false
+#
+# [*sensu_dashboard*]
+#   (optional) Enable or not sensu_dashboard binding.
+#   If true, both public and internal will attempt to be created except if vip_internal_ip is set to false.
+#   If set to ['10.0.0.1'], only IP in the array (or in the string) will be configured in the pool. They must be part of keepalived_ip options.
+#   If set to false, no binding will be configure.
+#   Defaults to true
+#
+# [*sensu_api*]
+#   (optional) Enable or not sensu_api binding.
+#   If true, both public and internal will attempt to be created except if vip_internal_ip is set to false.
+#   If set to ['10.0.0.1'], only IP in the array (or in the string) will be configured in the pool. They must be part of keepalived_ip options.
+#   If set to false, no binding will be configure.
+#   Defaults to true
 #
 # [*keystone_api_admin*]
 #   (optional) Enable or not Keystone admin binding.
@@ -304,6 +339,31 @@
 #   service configuration block.
 #   Defaults to []
 #
+# [*elasticsearch_bind_options*]
+#   (optional) A hash of options that are inserted into the HAproxy listening
+#   service configuration block.
+#   Defaults to []
+#
+# [*kibana_bind_options*]
+#   (optional) A hash of options that are inserted into the HAproxy listening
+#   service configuration block.
+#   Defaults to []
+#
+# [*sensu_dashboard_bind_options*]
+#   (optional) A hash of options that are inserted into the HAproxy listening
+#   service configuration block.
+#   Defaults to []
+#
+# [*sensu_api_bind_options*]
+#   (optional) A hash of options that are inserted into the HAproxy listening
+#   service configuration block.
+#   Defaults to []
+#
+# [*redis_bind_options*]
+#   (optional) A hash of options that are inserted into the HAproxy listening
+#   service configuration block.
+#   Defaults to []
+#
 # [*galera_bind_options*]
 #   (optional) A hash of options that are inserted into the HAproxy listening
 #   service configuration block.
@@ -389,6 +449,25 @@
 #   (optional) Port of RabbitMQ service.
 #   Defaults to '5672'
 #
+# [*elasticsearch_port*]
+#   (optional) Port of ElasticSearch service.
+#   Defaults to '9200'
+#
+# [*kibana_port*]
+#   (optional) Port of Kibana service.
+#   Defaults to '8300'
+# [*sensu_dashboard_port*]
+#   (optional) Port of Sensu Dashboard service.
+#   Defaults to '3000'
+#
+# [*sensu_api_port*]
+#   (optional) Port of Sensu API service.
+#   Defaults to '4568'
+#
+# [*redis_port*]
+#   (optional) Port of redis service.
+#   Defaults to '6379'
+#
 # [*vip_public_ip*]
 #  (optional) Array or string for public VIP
 #  Should be part of keepalived_public_ips
@@ -435,8 +514,13 @@ class cloud::loadbalancer(
   $horizon                          = true,
   $horizon_ssl                      = false,
   $rabbitmq                         = false,
-  $spice                            = true,
-  $novnc                            = false,
+  $spice                            = false,
+  $novnc                            = true,
+  $elasticsearch                    = true,
+  $kibana                           = true,
+  $sensu_dashboard                  = true,
+  $sensu_api                        = true,
+  $redis                            = true,
   $haproxy_auth                     = 'admin:changeme',
   $keepalived_state                 = 'BACKUP',
   $keepalived_priority              = '50',
@@ -468,6 +552,11 @@ class cloud::loadbalancer(
   $horizon_ssl_bind_options         = [],
   $rabbitmq_bind_options            = [],
   $galera_bind_options              = [],
+  $elasticsearch_bind_options       = [],
+  $kibana_bind_options              = [],
+  $sensu_dashboard_bind_options     = [],
+  $sensu_api_bind_options           = [],
+  $redis_bind_options               = [],
   $ks_ceilometer_public_port        = 8777,
   $ks_cinder_public_port            = 8776,
   $ks_ec2_public_port               = 8773,
@@ -488,6 +577,11 @@ class cloud::loadbalancer(
   $horizon_ssl_port                 = 443,
   $spice_port                       = 6082,
   $novnc_port                       = 6080,
+  $elasticsearch_port               = 9200,
+  $kibana_port                      = 8300,
+  $sensu_dashboard_port             = 3000,
+  $sensu_api_port                   = 4568,
+  $redis_port                       = 6379,
   $vip_public_ip                    = ['127.0.0.1'],
   $vip_internal_ip                  = false,
   $vip_monitor_ip                   = false,
@@ -535,7 +629,6 @@ class cloud::loadbalancer(
     auth_type     => $keepalived_auth_type,
     auth_pass     => $keepalived_auth_pass,
     notify_master => $::cloud::params::start_haproxy_service,
-    notify_backup => $::cloud::params::stop_haproxy_service,
   }
 
 
@@ -558,17 +651,18 @@ class cloud::loadbalancer(
         auth_type     => $keepalived_auth_type,
         auth_pass     => $keepalived_auth_pass,
         notify_master => $::cloud::params::start_haproxy_service,
-        notify_backup => $::cloud::params::stop_haproxy_service,
       }
     }
   }
 
-  file { '/etc/logrotate.d/haproxy':
-    ensure  => file,
-    source  => 'puppet:///modules/cloud/logrotate/haproxy',
-    owner   => root,
-    group   => root,
-    mode    => '0644';
+  logrotate::rule { 'haproxy':
+    path          => '/var/log/haproxy.log',
+    rotate        => 7,
+    rotate_every  => 'day',
+    missingok     => true,
+    ifempty       => false,
+    delaycompress => true,
+    compress      => true,
   }
 
   if $vip_monitor_ip {
@@ -579,7 +673,7 @@ class cloud::loadbalancer(
 
   haproxy::listen { 'monitor':
     ipaddress => $vip_monitor_ip_real,
-    ports     => '9300',
+    ports     => '10300',
     options   => {
       'mode'        => 'http',
       'monitor-uri' => '/status',
@@ -625,6 +719,25 @@ class cloud::loadbalancer(
     port              => $ks_metadata_public_port,
     bind_options      => $metadata_bind_options,
     firewall_settings => $firewall_settings,
+  }
+  cloud::loadbalancer::binding { 'sensu_dashboard':
+    ip                => $sensu_dashboard,
+    port              => $sensu_dashboard_port,
+    bind_options      => $sensu_dashboard_bind_options,
+    firewall_settings => $firewall_settings,
+    options           => {
+      'balance' => 'source',
+    },
+  }
+  cloud::loadbalancer::binding { 'sensu_api':
+    ip                => $sensu_api,
+    port              => $sensu_api_port,
+    bind_options      => $sensu_api_bind_options,
+    firewall_settings => $firewall_settings,
+    options           => {
+      'balance' => 'source',
+      'rspadd'  => ['Access-Control-Allow-Origin:\ *', 'Access-Control-Allow-Headers:\ origin,\ x-requested-with,\ content-type', 'Access-Control-Allow-Methods:\ PUT,\ GET,\ POST,\ DELETE,\ OPTIONS'],
+    },
   }
   cloud::loadbalancer::binding { 'spice_cluster':
     ip                => $spice,
@@ -783,6 +896,32 @@ class cloud::loadbalancer(
     firewall_settings => $firewall_settings,
   }
 
+  cloud::loadbalancer::binding { 'elasticsearch':
+    ip                => $elasticsearch,
+    port              => $elasticsearch_port,
+    bind_options      => $elasticsearch_bind_options,
+    firewall_settings => $firewall_settings,
+  }
+  cloud::loadbalancer::binding { 'kibana':
+    ip                => $kibana,
+    port              => $kibana_port,
+    bind_options      => $kibana_bind_options,
+    firewall_settings => $firewall_settings,
+  }
+
+  cloud::loadbalancer::binding { 'redis_cluster':
+    ip                => $redis,
+    port              => $redis_port,
+    options           => {
+      'mode'      => 'tcp',
+      'balance'   => 'first',
+      'option'    => ['tcp-check',],
+      'tcp-check' => ['send info\ replication\r\n','expect string role:master'],
+    },
+    bind_options      => $redis_bind_options,
+    firewall_settings => $firewall_settings,
+  }
+
   if (member(any2array($keepalived_public_ipvs), $galera_ip)) {
     warning('Exposing Galera cluster to public network is a security issue.')
   }
@@ -836,7 +975,7 @@ class cloud::loadbalancer(
       extras => $firewall_settings,
     }
     cloud::firewall::rule{ '100 allow haproxy monitor access':
-      port   => '9300',
+      port   => '10300',
       extras => $firewall_settings,
     }
     cloud::firewall::rule{ '100 allow keepalived access':
